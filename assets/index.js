@@ -2,6 +2,8 @@ const cityEl = document.getElementById("city-name");
 const searchEl = document.getElementById("search-button");
 let citySearchInput;
 let latLonApiUrl;
+const cityWeather = {};
+const cityCoord = {};
 let tempK;
 let tempF;
 let citySearchHistory = [];
@@ -22,7 +24,7 @@ let searchHistory = JSON.parse(localStorage.getItem("search")) || [];
 let today = new Date();
 let date = (today.getMonth()+1)+'/'+today.getDate()+'/'+today.getFullYear();
 
-const apiKey = "84b79da5e5d7c92085660485702f4ce8";
+const apiKey = "2ce12463fb5b0c23987908643b9111bb";
 
 
 
@@ -67,68 +69,66 @@ if (searchHistory.length > 0) {
 
 
 
-function getLatLon (searchEl) {
-    var latLonApiUrl = 'https://api.openweathermap.org/data/2.5/weather?q=' + searchEl + '&appid=' + apiKey;
+function getLatLon () {
+    cityCoord.data = 'https://api.openweathermap.org/geo/1.0/direct?q=' + citySearchInput + '=&limit=&appid=' + apiKey;
     
-    fetch(latLonApiUrl).then(function (response) {
-      if (response.ok) {
-         response.json().then(function (data) {
-            lat = data.coord.lat;
-            lon = data.coord.lon;
-        }) .then(getWeatherData);
-      } else {
-        alert('Error: ' + response.statusText);
-      }
-    });
+    fetch(cityCoord.data).then(function (coords) {
+      return coords.json();
+    }) .then(getWeatherData);
   };
 
-function getWeatherData (citySearchInput) {
-    var apiUrl = 'https://api.openweathermap.org/data/2.5/onecall?lat=' + lat + '&lon=' + lon + '&exclude=minutely,hourly,alerts&appid=' + apiKey;
-    fetch(apiUrl).then(function (response) {
-      if (response.ok) {
-        response.json().then(function (data) {
+function getWeatherData () {
+  fetch(cityCoord.data)
+    .then(function (coords) {
+      return coords.json();
+    })
+    .then(function (cityEl) {
+      cityWeather.data = 'https://api.openweathermap.org/data/2.5/forecast?lat=${data[0].lat}&lon=${data[0].lon}&appid=' + apiKey;
+      fetch(cityWeather.data)
+      .then(function (weather) {
+        return weather.json();
+      })
+          .then(function (response) {
                 // Current City and Date
-          nameEl.textContent = (cityEl.value.trim() + ' (' + date + ')');
+            nameEl.textContent = (cityEl.value.trim() + ' (' + date + ')');
 
           // Current Weather Icon
-          currentPicEl = data.current.weather[0].icon;
-          weatherTodayIconSource = ('https://openweathermap.org/img/wn/' + todayweatherEl + '@2x.png')
-          weatherTodayDescription = data.current.weather[0].description;
-          currentPicEl.src = weatherTodayIconSource;
-          currentPicEl.alt = weatherTodayDescription;
+            currentPicEl = data.current.weather[0].icon;
+            weatherTodayIconSource = ('https://openweathermap.org/img/wn/' + todayweatherEl + '@2x.png')
+            weatherTodayDescription = data.current.weather[0].description;
+            currentPicEl.src = weatherTodayIconSource;
+            currentPicEl.alt = weatherTodayDescription;
 
           // Current Temperature
-          tempK = data.current.temp;
-          tempF = k2f(tempK) + " &#176F";
-          currentTempEl.innerHTML = tempF;
+            tempK = data.current.temp;
+            tempF = k2f(tempK) + " &#176F";
+            currentTempEl.innerHTML = tempF;
 
           // Current Humidity
-          currentHumidityEl.innerHTML = (data.current.humidity + "%");
+            currentHumidityEl.innerHTML = (data.current.humidity + "%");
 
           // Current Wind Speed
-          currentWindEl.innerHTML = (data.current.wind_speed + " MPH");
+            currentWindEl.innerHTML = (data.current.wind_speed + " MPH");
 
           // Current UV Index
-          currentUVIndex = (data.current.uvi);
-          currentUVEl.innerHTML = currentUVIndex;
-          if (currentUVIndex < 2.99) {
-            currentUVEl.classList.add('custom-favorable');
-            currentUVEl.classList.remove('custom-moderate');
-            currentUVEl.classList.remove('custom-severe');
-          } else if (currentUVIndex > 3 && currentUVIndex < 5.99) {
-            currentUVEl.classList.add('custom-moderate');
-            currentUVEl.classList.remove('custom-favorable');
-            currentUVEl.classList.remove('custom-severe');
-          } else {
-            currentUVEl.classList.add('custom-severe');
-            currentUVEl.classList.remove('custom-favorable');
-            currentUVEl.classList.remove('custom-moderate');
-          };
+            currentUVIndex = (data.current.uvi);
+            currentUVEl.innerHTML = currentUVIndex;
+            if (currentUVIndex < 2.99) {
+              currentUVEl.classList.add('custom-favorable');
+              currentUVEl.classList.remove('custom-moderate');
+              currentUVEl.classList.remove('custom-severe');
+           } else if (currentUVIndex > 3 && currentUVIndex < 5.99) {
+              currentUVEl.classList.add('custom-moderate');
+              currentUVEl.classList.remove('custom-favorable');
+             currentUVEl.classList.remove('custom-severe');
+            } else {
+              currentUVEl.classList.add('custom-severe');
+              currentUVEl.classList.remove('custom-favorable');
+              currentUVEl.classList.remove('custom-moderate');
+            };
+          });
         });
-      };
-    });
-  };
-                
+      };             
         
 function k2f(K) {
     return Math.floor((K - 273.15) * 1.8 + 32);
